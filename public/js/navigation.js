@@ -15,10 +15,11 @@ function showView(viewName) {
     // Ocultar todas las vistas
     views.forEach(view => view.style.display = 'none');
 
-    const viewToShow = document.getElementById(viewName);
+    // ❗ AQUI ESTABA EL ERROR – agregar el sufijo "-view"
+    const viewToShow = document.getElementById(viewName + '-view');
 
     if (!viewToShow) {
-        console.error(`❌ La vista "${viewName}" no existe.`);
+        console.error(`❌ La vista "${viewName}-view" no existe.`);
         return;
     }
 
