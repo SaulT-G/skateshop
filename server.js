@@ -71,35 +71,47 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // =============================================================
-// ==================== AUTH: LOGIN ============================
+// ==================== AUTH: LOGIN (CORREGIDO) ================
 // =============================================================
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-
         let email = username;
 
-        // Si no es un correo, se busca por username
+        // Si NO es email, buscarlo como username
         if (!username.includes("@")) {
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
                 .from("profiles")
-                .select("email")
+                .select("id")
                 .eq("username", username)
                 .single();
 
-            if (!profile)
+            if (profileError || !profile)
                 return res.json({ success: false, message: "Usuario no encontrado" });
 
-            email = profile.email;
+            // Obtener email REAL desde auth.users
+            const { data: userRecord, error: userError } = await supabase
+                .from("auth.users")
+                .select("email")
+                .eq("id", profile.id)
+                .single();
+
+            if (userError || !userRecord)
+                return res.json({ success: false, message: "Error obteniendo email del usuario" });
+
+            email = userRecord.email;
         }
 
+        // Intentar login
         const { data, error } = await supabase.auth.signInWithPassword({
-            email, password
+            email,
+            password
         });
 
         if (error)
             return res.json({ success: false, message: "Credenciales incorrectas" });
 
+        // Obtener perfil desde nuestra tabla profiles
         const { data: profile } = await supabase
             .from("profiles")
             .select("*")
