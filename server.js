@@ -594,7 +594,7 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar servidor
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
     console.log('╔════════════════════════════════════════╗');
     console.log('║  🚀 SERVIDOR INICIADO CORRECTAMENTE   ║');
     console.log('╚════════════════════════════════════════╝');
