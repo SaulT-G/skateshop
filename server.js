@@ -45,7 +45,9 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 },
 });
 
-// ==================== AUTH: REGISTRO ====================
+// =============================================================
+// ==================== AUTH: REGISTRO =========================
+// =============================================================
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { fullname, username, email, password } = req.body;
@@ -68,13 +70,16 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// ==================== AUTH: LOGIN ====================
+// =============================================================
+// ==================== AUTH: LOGIN ============================
+// =============================================================
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
 
         let email = username;
 
+        // Si no es un correo, buscarlo por username
         if (!username.includes("@")) {
             const { data: profile } = await supabase
                 .from("profiles")
@@ -118,7 +123,11 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// ==================== PRODUCTOS ====================
+// =============================================================
+// ==================== PRODUCTOS ==============================
+// =============================================================
+
+// Obtener productos
 app.get('/api/products', async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -135,6 +144,7 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
+// Crear producto
 app.post('/api/products', upload.single("imagen"), async (req, res) => {
     try {
         const { titulo, detalle, cantidad, precio } = req.body;
@@ -175,6 +185,51 @@ app.post('/api/products', upload.single("imagen"), async (req, res) => {
     }
 });
 
+// ==================== ACTUALIZAR PRODUCTO ====================
+app.put('/api/products/:id', upload.single("imagen"), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { titulo, detalle, cantidad, precio } = req.body;
+
+        let updateData = {
+            titulo,
+            detalle,
+            cantidad: Number(cantidad),
+            precio: Number(precio)
+        };
+
+        // Si viene nueva imagen, subirla
+        if (req.file) {
+            const fileName = `${Date.now()}-${req.file.originalname}`;
+
+            await supabase.storage
+                .from("product-images")
+                .upload(`products/${fileName}`, req.file.buffer);
+
+            const { data } = supabase.storage
+                .from("product-images")
+                .getPublicUrl(`products/${fileName}`);
+
+            updateData.imagen_url = data.publicUrl;
+        }
+
+        const { data, error } = await supabase
+            .from("products")
+            .update(updateData)
+            .eq("id", id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json({ success: true, data });
+
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+});
+
+// ==================== ELIMINAR PRODUCTO ====================
 app.delete('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -188,7 +243,11 @@ app.delete('/api/products/:id', async (req, res) => {
     }
 });
 
-// ==================== CARRITO ====================
+// =============================================================
+// ==================== CARRITO ================================
+// =============================================================
+
+// Obtener carrito
 app.get('/api/cart/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
@@ -214,13 +273,17 @@ app.get('/api/cart/:userId', async (req, res) => {
     }
 });
 
+// Agregar al carrito
 app.post('/api/cart', async (req, res) => {
     try {
         const { user_id, product_id, quantity } = req.body;
 
         const { data, error } = await supabase
             .from("cart")
-            .upsert({ user_id, product_id, quantity }, { onConflict: "user_id,product_id" })
+            .upsert(
+                { user_id, product_id, quantity },
+                { onConflict: "user_id,product_id" }
+            )
             .select()
             .single();
 
@@ -233,6 +296,30 @@ app.post('/api/cart', async (req, res) => {
     }
 });
 
+// Actualizar cantidad del carrito
+app.put('/api/cart/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { quantity } = req.body;
+
+        if (!quantity || quantity < 1)
+            return res.json({ success: false, message: "Cantidad inválida" });
+
+        const { error } = await supabase
+            .from("cart")
+            .update({ quantity })
+            .eq("id", id);
+
+        if (error) throw error;
+
+        res.json({ success: true, message: "Cantidad actualizada" });
+
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+});
+
+// Eliminar un ítem
 app.delete('/api/cart/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -246,7 +333,28 @@ app.delete('/api/cart/:id', async (req, res) => {
     }
 });
 
-// ==================== INICIAR SERVIDOR ====================
+// Vaciar carrito
+app.delete('/api/cart/clear/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const { error } = await supabase
+            .from("cart")
+            .delete()
+            .eq("user_id", userId);
+
+        if (error) throw error;
+
+        res.json({ success: true, message: "Carrito vaciado" });
+
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+});
+
+// =============================================================
+// ==================== INICIAR SERVIDOR ========================
+// =============================================================
 app.listen(PORT, "0.0.0.0", () => {
     console.log("=====================================");
     console.log("🚀 Servidor iniciado correctamente");
