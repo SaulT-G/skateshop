@@ -52,7 +52,7 @@ const upload = multer({
 
 // ==================== AUTH: REGISTRO ====================
 
-app.post('/api/auth/register', async (req, res) => {
+app.post('/auth/register', async (req, res) => {
     try {
         const { fullname, username, email, password } = req.body;
 
@@ -83,7 +83,7 @@ app.post('/api/auth/register', async (req, res) => {
 
 // ==================== AUTH: LOGIN ====================
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
 
