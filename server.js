@@ -2,16 +2,15 @@
 
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');   // 🔥 IMPORTANTE
+const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ==================== CORS (SOLUCIÓN DEL ERROR DE CONEXIÓN) ====================
+// ==================== CORS ====================
 
 app.use(cors({
     origin: "*",
@@ -23,24 +22,20 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
-// ==================== VALIDACIÓN DE VARIABLES ====================
+// ==================== VALIDAR VARIABLES ====================
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
     console.error("❌ ERROR: Variables de entorno de Supabase no configuradas");
     process.exit(1);
 }
 
-// ==================== INICIALIZAR SUPABASE ====================
-
+// ==================== SUPABASE ====================
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_ANON_KEY
 );
 
-console.log("🔗 Conectado a Supabase:", process.env.SUPABASE_URL);
-
-// ==================== CONFIGURACIÓN DE MULTER ====================
-
+// ==================== MULTER ====================
 if (!fs.existsSync("uploads")) {
     fs.mkdirSync("uploads", { recursive: true });
 }
@@ -51,30 +46,22 @@ const upload = multer({
 });
 
 // ==================== AUTH: REGISTRO ====================
-
-app.post('/auth/register', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
     try {
         const { fullname, username, email, password } = req.body;
 
-        if (!fullname || !username || !email || !password) {
+        if (!fullname || !username || !email || !password)
             return res.json({ success: false, message: "Faltan datos" });
-        }
 
-        const { error, data } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
-            options: {
-                data: { fullname, username, role: "comprador" }
-            }
+            options: { data: { fullname, username, role: "comprador" } }
         });
 
         if (error) return res.json({ success: false, message: error.message });
 
-        res.json({
-            success: true,
-            message: "Usuario registrado",
-            user: data.user
-        });
+        res.json({ success: true, user: data.user });
 
     } catch (err) {
         res.json({ success: false, message: err.message });
@@ -82,12 +69,10 @@ app.post('/auth/register', async (req, res) => {
 });
 
 // ==================== AUTH: LOGIN ====================
-
-app.post('/auth/login', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        // Si el usuario ingresó su username, convertir a email
         let email = username;
 
         if (!username.includes("@")) {
@@ -97,21 +82,19 @@ app.post('/auth/login', async (req, res) => {
                 .eq("username", username)
                 .single();
 
-            if (!profile) {
+            if (!profile)
                 return res.json({ success: false, message: "Usuario no encontrado" });
-            }
 
             email = profile.email;
         }
 
         const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
+            email, password
         });
 
-        if (error) return res.json({ success: false, message: "Credenciales incorrectas" });
+        if (error)
+            return res.json({ success: false, message: "Credenciales incorrectas" });
 
-        // Obtener perfil
         const { data: profile } = await supabase
             .from("profiles")
             .select("*")
@@ -123,9 +106,9 @@ app.post('/auth/login', async (req, res) => {
             user: {
                 id: data.user.id,
                 email: data.user.email,
-                fullname: profile?.fullname || "Usuario",
-                username: profile?.username || "user",
-                role: profile?.role || "comprador"
+                fullname: profile.fullname,
+                username: profile.username,
+                role: profile.role
             },
             session: data.session
         });
@@ -136,13 +119,11 @@ app.post('/auth/login', async (req, res) => {
 });
 
 // ==================== PRODUCTOS ====================
-
-// GET productos
 app.get('/api/products', async (req, res) => {
     try {
         const { data, error } = await supabase
-            .from('products')
-            .select('*')
+            .from("products")
+            .select("*")
             .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -154,15 +135,14 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-// POST producto (Admin)
 app.post('/api/products', upload.single("imagen"), async (req, res) => {
     try {
         const { titulo, detalle, cantidad, precio } = req.body;
         let imagen_url = null;
 
-        // Subir imagen si existe
         if (req.file) {
             const fileName = `${Date.now()}-${req.file.originalname}`;
+
             await supabase.storage
                 .from("product-images")
                 .upload(`products/${fileName}`, req.file.buffer);
@@ -195,14 +175,13 @@ app.post('/api/products', upload.single("imagen"), async (req, res) => {
     }
 });
 
-// DELETE producto
 app.delete('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
         await supabase.from("products").delete().eq("id", id);
 
-        res.json({ success: true, message: "Producto eliminado" });
+        res.json({ success: true });
 
     } catch (err) {
         res.json({ success: false, message: err.message });
@@ -210,7 +189,6 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // ==================== CARRITO ====================
-
 app.get('/api/cart/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
@@ -222,27 +200,27 @@ app.get('/api/cart/:userId', async (req, res) => {
 
         if (error) throw error;
 
-        const formatted = data.map(item => ({
-            id: item.id,
-            quantity: item.quantity,
-            product: item.products
-        }));
-
-        res.json({ success: true, data: formatted });
+        res.json({
+            success: true,
+            data: data.map(item => ({
+                id: item.id,
+                quantity: item.quantity,
+                product: item.products
+            }))
+        });
 
     } catch (err) {
         res.json({ success: false, message: err.message });
     }
 });
 
-// POST carrito
 app.post('/api/cart', async (req, res) => {
     try {
         const { user_id, product_id, quantity } = req.body;
 
         const { data, error } = await supabase
             .from("cart")
-            .upsert({ user_id, product_id, quantity }, { onConflict: 'user_id,product_id' })
+            .upsert({ user_id, product_id, quantity }, { onConflict: "user_id,product_id" })
             .select()
             .single();
 
@@ -255,12 +233,12 @@ app.post('/api/cart', async (req, res) => {
     }
 });
 
-// DELETE carrito
 app.delete('/api/cart/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
         await supabase.from("cart").delete().eq("id", id);
+
         res.json({ success: true });
 
     } catch (err) {
@@ -269,7 +247,6 @@ app.delete('/api/cart/:id', async (req, res) => {
 });
 
 // ==================== INICIAR SERVIDOR ====================
-
 app.listen(PORT, "0.0.0.0", () => {
     console.log("=====================================");
     console.log("🚀 Servidor iniciado correctamente");

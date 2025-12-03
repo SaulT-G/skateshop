@@ -1,37 +1,10 @@
 // ==================== AUTENTICACIÓN ====================
 
-// Verificar autenticación con Supabase
+// Verificar autenticación usando solo localStorage
 async function checkAuth() {
     try {
-        if (supabaseClient) {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-
-            if (session?.user) {
-                const userId = session.user.id;
-
-                const { data: profile } = await supabaseClient
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', userId)
-                    .single();
-
-                if (profile) {
-                    currentUser = {
-                        id: session.user.id,
-                        email: session.user.email,
-                        fullname: profile.fullname || 'Usuario',
-                        username: profile.username || 'user',
-                        role: profile.role || 'comprador'
-                    };
-
-                    localStorage.setItem('user', JSON.stringify(currentUser));
-                    showViewByRole();
-                    return;
-                }
-            }
-        }
-
         const savedUser = localStorage.getItem('user');
+
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
             showViewByRole();
@@ -44,9 +17,12 @@ async function checkAuth() {
     }
 }
 
-// Manejar login con el servidor backend
+
+// ==================== LOGIN ====================
+
 async function handleLogin(e) {
     e.preventDefault();
+
     const username = document.getElementById('login-username').value.trim();
     const password = document.getElementById('login-password').value;
 
@@ -68,26 +44,22 @@ async function handleLogin(e) {
             currentUser = data.user;
             localStorage.setItem('user', JSON.stringify(currentUser));
 
-            if (data.session && supabaseClient) {
-                await supabaseClient.auth.setSession({
-                    access_token: data.session.access_token,
-                    refresh_token: data.session.refresh_token
-                });
-            }
-
             showNotification(`¡Bienvenido ${currentUser.fullname}!`, 'success');
             showViewByRole();
             document.getElementById('login-form').reset();
         } else {
             showNotification(data.message || 'Usuario o contraseña incorrectos', 'error');
         }
+
     } catch (error) {
         console.error('Error en login:', error);
         showNotification('Error de conexión con el servidor', 'error');
     }
 }
 
-// Manejar registro con backend
+
+// ==================== REGISTRO ====================
+
 async function handleRegister(e) {
     e.preventDefault();
 
@@ -134,13 +106,16 @@ async function handleRegister(e) {
         } else {
             showNotification(data.message || 'Error al registrarse', 'error');
         }
+
     } catch (error) {
         console.error('Error en registro:', error);
         showNotification('Error de conexión con el servidor', 'error');
     }
 }
 
-// Cerrar sesión
+
+// ==================== LOGOUT ====================
+
 async function handleLogout() {
     const confirmed = await showConfirm({
         icon: '👋',
@@ -153,8 +128,6 @@ async function handleLogout() {
     if (!confirmed) return;
 
     try {
-        if (supabaseClient) await supabaseClient.auth.signOut();
-
         currentUser = null;
         cartItems = [];
         productsCache = null;
@@ -170,6 +143,9 @@ async function handleLogout() {
         showNotification('Error al cerrar sesión', 'error');
     }
 }
+
+
+// ==================== NAVBAR ====================
 
 function updateNavbar() {
     if (currentUser) {
