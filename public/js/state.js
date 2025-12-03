@@ -2,7 +2,7 @@
 
 // Estado de la aplicación
 let currentUser = null;
-let currentToken = null;
+let currentToken = null; // Se mantiene por compatibilidad pero NO se usa
 let editingProductId = null;
 let cartItems = [];
 let productsCache = null;
@@ -17,25 +17,33 @@ let productsView;
 let cartView;
 let adminView;
 let adminDashboardView;
+
 let loginForm;
 let registerForm;
 let productForm;
+
 let logoutBtn;
 let userInfo;
+
 let addProductBtn;
 let productFormContainer;
 let cancelFormBtn;
+
 let productModal;
 let closeModal;
+
 let cartIconBtn;
 let cartIconContainer;
 let cartCountElement;
+
 let cartItemsList;
 let cartEmpty;
 let clearCartBtn;
+
 let backToMainBtn;
 
-// Función para inicializar elementos del DOM
+// ==================== INICIALIZACIÓN DEL DOM ====================
+
 function initDOMElements() {
     loginView = document.getElementById('login-view');
     registerView = document.getElementById('register-view');
@@ -43,24 +51,33 @@ function initDOMElements() {
     cartView = document.getElementById('cart-view');
     adminView = document.getElementById('admin-view');
     adminDashboardView = document.getElementById('admin-dashboard-view');
+
     loginForm = document.getElementById('login-form');
     registerForm = document.getElementById('register-form');
     productForm = document.getElementById('product-form');
+
     logoutBtn = document.getElementById('logout-btn');
     userInfo = document.getElementById('user-info');
+
     addProductBtn = document.getElementById('add-product-btn');
     productFormContainer = document.getElementById('product-form-container');
     cancelFormBtn = document.getElementById('cancel-form-btn');
+
     productModal = document.getElementById('product-modal');
     closeModal = document.querySelector('.close-modal');
+
     cartIconBtn = document.getElementById('cart-icon-btn');
     cartIconContainer = document.getElementById('cart-icon-container');
     cartCountElement = document.getElementById('cart-count');
+
     cartItemsList = document.getElementById('cart-items-list');
     cartEmpty = document.getElementById('cart-empty');
     clearCartBtn = document.getElementById('clear-cart-btn');
+
     backToMainBtn = document.getElementById('back-to-main-btn');
+
+    console.log("✅ DOM inicializado (state.js)");
 }
 
-// Llamar a la función initDOMElements cuando el DOM esté completamente cargado
-document.addEventListener('DOMContentLoaded', initDOMElements);
+// ⛔ IMPORTANTE: NO volvemos a poner otro DOMContentLoaded aquí
+// init.js YA maneja la inicialización global

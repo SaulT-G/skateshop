@@ -3,16 +3,13 @@
 // Verificar autenticación con Supabase
 async function checkAuth() {
     try {
-        // Intentar obtener sesión de Supabase
         if (supabaseClient) {
-            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
 
             if (session?.user) {
-                // Usuario autenticado en Supabase
                 const userId = session.user.id;
 
-                // Obtener perfil completo desde profiles
-                const { data: profile, error: profileError } = await supabaseClient
+                const { data: profile } = await supabaseClient
                     .from('profiles')
                     .select('*')
                     .eq('id', userId)
@@ -27,16 +24,13 @@ async function checkAuth() {
                         role: profile.role || 'comprador'
                     };
 
-                    // Guardar en localStorage para persistencia
                     localStorage.setItem('user', JSON.stringify(currentUser));
-
                     showViewByRole();
                     return;
                 }
             }
         }
 
-        // Si no hay sesión en Supabase, verificar localStorage
         const savedUser = localStorage.getItem('user');
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
@@ -62,11 +56,9 @@ async function handleLogin(e) {
     }
 
     try {
-        const response = await fetch(`${API_URL}/auth/login`, {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
 
@@ -74,11 +66,8 @@ async function handleLogin(e) {
 
         if (data.success && data.user) {
             currentUser = data.user;
-
-            // Guardar en localStorage
             localStorage.setItem('user', JSON.stringify(currentUser));
 
-            // Guardar sesión de Supabase si existe
             if (data.session && supabaseClient) {
                 await supabaseClient.auth.setSession({
                     access_token: data.session.access_token,
@@ -88,8 +77,6 @@ async function handleLogin(e) {
 
             showNotification(`¡Bienvenido ${currentUser.fullname}!`, 'success');
             showViewByRole();
-
-            // Limpiar formulario
             document.getElementById('login-form').reset();
         } else {
             showNotification(data.message || 'Usuario o contraseña incorrectos', 'error');
@@ -100,7 +87,7 @@ async function handleLogin(e) {
     }
 }
 
-// Manejar registro con el servidor backend
+// Manejar registro con backend
 async function handleRegister(e) {
     e.preventDefault();
 
@@ -110,7 +97,6 @@ async function handleRegister(e) {
     const password = document.getElementById('register-password').value;
     const confirmPassword = document.getElementById('register-confirm-password').value;
 
-    // Validaciones
     if (!fullname || !username || !email || !password || !confirmPassword) {
         showNotification('Por favor completa todos los campos', 'error');
         return;
@@ -126,7 +112,6 @@ async function handleRegister(e) {
         return;
     }
 
-    // Validar email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         showNotification('Por favor ingresa un email válido', 'error');
@@ -134,17 +119,10 @@ async function handleRegister(e) {
     }
 
     try {
-        const response = await fetch(`${API_URL}/auth/register`, {
+        const response = await fetch(`${API_URL}/api/auth/register`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                fullname,
-                username,
-                email,
-                password
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullname, username, email, password })
         });
 
         const data = await response.json();
@@ -172,17 +150,11 @@ async function handleLogout() {
         cancelText: 'Cancelar'
     });
 
-    if (!confirmed) {
-        return;
-    }
+    if (!confirmed) return;
 
     try {
-        // Cerrar sesión en Supabase
-        if (supabaseClient) {
-            await supabaseClient.auth.signOut();
-        }
+        if (supabaseClient) await supabaseClient.auth.signOut();
 
-        // Limpiar estado local
         currentUser = null;
         cartItems = [];
         productsCache = null;
@@ -199,7 +171,6 @@ async function handleLogout() {
     }
 }
 
-// Actualizar barra de navegación
 function updateNavbar() {
     if (currentUser) {
         userInfo.textContent = `${currentUser.fullname} (${currentUser.role})`;

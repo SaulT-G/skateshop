@@ -1,42 +1,43 @@
 // ==================== UTILIDADES ====================
 
-// Utilidad de debounce para optimización
+// ---------- Debounce ----------
 function debounce(func, wait) {
     let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
+    return function (...args) {
         clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
+        timeout = setTimeout(() => func(...args), wait);
     };
 }
 
-// Mostrar notificación mejorada
+// ---------- Notificaciones ----------
 function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
 
-    // Limpiar clases previas
+    if (!notification) {
+        console.error("❌ No se encontró #notification en el DOM");
+        return;
+    }
+
+    // Reiniciar animaciones si se llama varias veces
+    notification.style.display = 'block';
     notification.classList.remove('hiding');
 
+    // Establecer contenido
     notification.textContent = message;
     notification.className = `notification ${type}`;
-    notification.style.display = 'block';
 
-    // Auto-ocultar después de 3 segundos con animación
+    // Auto-ocultar después de 3s
     setTimeout(() => {
         notification.classList.add('hiding');
 
-        // Remover el elemento después de la animación
         setTimeout(() => {
             notification.style.display = 'none';
             notification.classList.remove('hiding');
-        }, 300);
+        }, 300); // Tiempo de la animación
     }, 3000);
 }
 
-// Modal de confirmación personalizado
+// ---------- Modal de confirmación ----------
 function showConfirm(options = {}) {
     return new Promise((resolve) => {
         const modal = document.getElementById('confirm-modal');
@@ -46,34 +47,39 @@ function showConfirm(options = {}) {
         const btnYes = document.getElementById('confirm-btn-yes');
         const btnNo = document.getElementById('confirm-btn-no');
 
-        // Configurar el contenido
+        if (!modal || !btnYes || !btnNo) {
+            console.error("❌ Modal de confirmación no encontrado en el DOM");
+            resolve(false);
+            return;
+        }
+
+        // Configurar contenido
         icon.textContent = options.icon || '⚠️';
         title.textContent = options.title || '¿Estás seguro?';
         message.textContent = options.message || 'Esta acción no se puede deshacer.';
-        btnYes.textContent = options.confirmText || 'Sí, eliminar';
+        btnYes.textContent = options.confirmText || 'Sí, continuar';
         btnNo.textContent = options.cancelText || 'Cancelar';
 
-        // Mostrar modal
         modal.classList.add('active');
 
-        // Función para cerrar
+        // Función de cierre
         const close = (result) => {
             modal.classList.remove('active');
             resolve(result);
-            // Limpiar event listeners
+
+            // Remover listeners para evitar duplicaciones
             btnYes.onclick = null;
             btnNo.onclick = null;
+            modal.onclick = null;
         };
 
-        // Event listeners
+        // Botones
         btnYes.onclick = () => close(true);
         btnNo.onclick = () => close(false);
 
-        // Cerrar al hacer clic fuera
+        // Cerrar si se hace clic fuera del contenido del modal
         modal.onclick = (e) => {
-            if (e.target === modal) {
-                close(false);
-            }
+            if (e.target === modal) close(false);
         };
     });
 }

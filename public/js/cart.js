@@ -9,14 +9,12 @@ async function loadCart() {
     cartEmpty.style.display = 'none';
 
     try {
-        const response = await fetch(`${API_URL}/cart/${currentUser.id}`);
+        const response = await fetch(`${API_URL}/api/cart/${currentUser.id}`);
 
         if (response.ok) {
             const result = await response.json();
-            // El servidor devuelve { success: true, data: [...] }
             const cartData = result.data || result;
 
-            // Transformar datos de Supabase
             cartItems = cartData.map(item => ({
                 id: item.id,
                 quantity: item.quantity,
@@ -37,6 +35,7 @@ async function loadCart() {
                 displayCartItems();
                 clearCartBtn.style.display = 'block';
             }
+
             updateCartCount();
         } else {
             showNotification('Error al cargar carrito', 'error');
@@ -67,17 +66,15 @@ function createCartItemElement(item) {
     const div = document.createElement('div');
     div.className = 'cart-item';
 
-    // Usar imagen_url de Supabase
     const imageUrl = item.imagen_url || null;
-
     const precioUnitario = parseFloat(item.precio || 0);
     const precioTotal = precioUnitario * item.quantity;
 
     div.innerHTML = `
         <div class="cart-item-image">
             ${imageUrl
-                ? `<img src="${imageUrl}" alt="${item.titulo}" loading="lazy" onerror="this.parentElement.innerHTML='🛹'">`
-                : '🛹'}
+        ? `<img src="${imageUrl}" alt="${item.titulo}" loading="lazy" onerror="this.parentElement.innerHTML='🛹'">`
+        : '🛹'}
         </div>
         <div class="cart-item-info">
             <h3 class="cart-item-title">${item.titulo}</h3>
@@ -101,7 +98,6 @@ function createCartItemElement(item) {
         </div>
     `;
 
-    // Agregar event listeners a los botones después de crear el elemento
     const decreaseBtn = div.querySelector('.quantity-decrease');
     const increaseBtn = div.querySelector('.quantity-increase');
     const removeBtn = div.querySelector('.cart-item-remove');
@@ -109,7 +105,6 @@ function createCartItemElement(item) {
     if (decreaseBtn) {
         decreaseBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('Botón - clickeado, item ID:', item.id, 'cantidad actual:', item.quantity);
             updateCartQuantity(item.id, item.quantity - 1);
         });
     }
@@ -117,7 +112,6 @@ function createCartItemElement(item) {
     if (increaseBtn) {
         increaseBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('Botón + clickeado, item ID:', item.id, 'cantidad actual:', item.quantity);
             if (item.quantity < item.stock) {
                 updateCartQuantity(item.id, item.quantity + 1);
             } else {
@@ -129,7 +123,6 @@ function createCartItemElement(item) {
     if (removeBtn) {
         removeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('Botón Eliminar clickeado, item ID:', item.id);
             removeFromCart(item.id);
         });
     }
@@ -144,31 +137,29 @@ function addToCart(productId) {
         return;
     }
 
-    fetch(`${API_URL}/cart`, {
+    fetch(`${API_URL}/api/cart`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             user_id: currentUser.id,
             product_id: productId,
             quantity: 1
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('Producto agregado al carrito', 'success');
-            loadCartCount();
-            productsCache = null;
-        } else {
-            showNotification(data.message || 'Error al agregar al carrito', 'error');
-        }
-    })
-    .catch(error => {
-        showNotification('Error de conexión', 'error');
-        console.error('Error:', error);
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Producto agregado al carrito', 'success');
+                loadCartCount();
+                productsCache = null;
+            } else {
+                showNotification(data.message || 'Error al agregar al carrito', 'error');
+            }
+        })
+        .catch(error => {
+            showNotification('Error de conexión', 'error');
+            console.error('Error:', error);
+        });
 }
 
 // Actualizar cantidad en carrito
@@ -184,31 +175,29 @@ function updateCartQuantity(cartId, quantity) {
         return;
     }
 
-    fetch(`${API_URL}/cart/${cartId}`, {
+    fetch(`${API_URL}/api/cart/${cartId}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            loadCart();
-        } else {
-            showNotification(data.message || 'Error al actualizar cantidad', 'error');
-        }
-    })
-    .catch(error => {
-        showNotification('Error de conexión', 'error');
-        console.error('Error:', error);
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadCart();
+            } else {
+                showNotification(data.message || 'Error al actualizar cantidad', 'error');
+            }
+        })
+        .catch(error => {
+            showNotification('Error de conexión', 'error');
+            console.error('Error:', error);
+        });
 }
 
 // Eliminar del carrito
 async function removeFromCart(cartId) {
     try {
-        const response = await fetch(`${API_URL}/cart/${cartId}`, {
+        const response = await fetch(`${API_URL}/api/cart/${cartId}`, {
             method: 'DELETE'
         });
 
@@ -232,17 +221,15 @@ async function handleClearCart() {
     const confirmed = await showConfirm({
         icon: '🛒',
         title: 'Vaciar Carrito',
-        message: '¿Estás seguro de que deseas vaciar todo el carrito? Esta acción no se puede deshacer.',
+        message: '¿Estás seguro de que deseas vaciar todo el carrito?',
         confirmText: 'Sí, vaciar',
         cancelText: 'Cancelar'
     });
 
-    if (!confirmed) {
-        return;
-    }
+    if (!confirmed) return;
 
     try {
-        const response = await fetch(`${API_URL}/cart/clear/${currentUser.id}`, {
+        const response = await fetch(`${API_URL}/api/cart/clear/${currentUser.id}`, {
             method: 'DELETE'
         });
 
@@ -261,7 +248,7 @@ async function handleClearCart() {
     }
 }
 
-// Cargar cantidad de items en el carrito
+// Cargar contador de carrito
 async function loadCartCount() {
     if (!currentUser || currentUser.role !== 'comprador') {
         cartCount = 0;
@@ -270,7 +257,7 @@ async function loadCartCount() {
     }
 
     try {
-        const response = await fetch(`${API_URL}/cart/${currentUser.id}`);
+        const response = await fetch(`${API_URL}/api/cart/${currentUser.id}`);
 
         if (response.ok) {
             const result = await response.json();
@@ -279,11 +266,11 @@ async function loadCartCount() {
             updateCartCount();
         }
     } catch (error) {
-        console.error('Error cargando contador de carrito:', error);
+        console.error('Error cargando contador del carrito:', error);
     }
 }
 
-// Actualizar el contador visual del carrito
+// Actualizar contador visual
 function updateCartCount() {
     if (cartCountElement) {
         cartCountElement.textContent = cartCount;
