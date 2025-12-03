@@ -15,19 +15,17 @@ function showView(viewName) {
     // Ocultar todas las vistas
     views.forEach(view => view.style.display = 'none');
 
-    // ❗ AQUI ESTABA EL ERROR – agregar el sufijo "-view"
+    // 🔥 ID correcto: *viewName + "-view"*
     const viewToShow = document.getElementById(viewName + '-view');
 
     if (!viewToShow) {
-        console.error(`❌ La vista "${viewName}-view" no existe.`);
+        console.error(`❌ La vista "${viewName}-view" no existe en el DOM.`);
         return;
     }
 
-    // Mostrar vista solicitada
     viewToShow.style.display = 'block';
     currentView = viewName;
 
-    // Acciones automáticas al cargar vistas
     handleAutoViewActions(viewName);
 }
 
@@ -36,6 +34,7 @@ function handleAutoViewActions(viewName) {
     if (!currentUser) return;
 
     switch (viewName) {
+
         case 'products':
             loadProducts();
             break;
@@ -44,15 +43,25 @@ function handleAutoViewActions(viewName) {
             if (currentUser.role === 'comprador') {
                 loadCart();
             } else {
-                console.warn("⚠️ Un usuario admin no debería ver el carrito.");
-                showView('admin-dashboard');
+                console.warn("⚠️ Un admin no puede ver el carrito.");
+                showView('admin-dashboard'); // 🔥 DASHBOARD CORRECTO
             }
             break;
 
         case 'admin-dashboard':
             if (currentUser.role !== 'admin') {
-                console.warn("⚠️ Un comprador no puede acceder al dashboard admin.");
+                console.warn("⚠️ Un comprador no puede acceder al panel admin.");
                 showView('products');
+            }
+            break;
+
+        case 'admin':
+            // Vista de gestión de productos
+            if (currentUser.role !== 'admin') {
+                console.warn("⚠️ Un comprador no puede acceder a productos admin.");
+                showView('products');
+            } else {
+                loadAdminProducts();
             }
             break;
     }
@@ -69,7 +78,7 @@ function showViewByRole() {
     updateNavbar();
 
     if (currentUser.role === 'admin') {
-        showView('admin-dashboard');
+        showView('admin-dashboard');  // ✔ Vista correcta del panel
     } else {
         showView('products');
         loadProducts();
@@ -86,7 +95,6 @@ function clearForms() {
 
 // ==================== UTILIDADES DE NAVEGACIÓN ====================
 
-// Permite volver atrás a la vista principal según el rol
 function goBackToHome() {
     if (!currentUser) {
         showView('login');
@@ -94,7 +102,7 @@ function goBackToHome() {
     }
 
     if (currentUser.role === 'admin') {
-        showView('admin-dashboard');
+        showView('admin-dashboard'); // ✔ Vista correcta
     } else {
         showView('products');
         loadProducts();

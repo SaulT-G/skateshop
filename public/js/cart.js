@@ -9,7 +9,7 @@ async function loadCart() {
     cartEmpty.style.display = 'none';
 
     try {
-        const response = await fetch(`${API_URL}/api/cart/${currentUser.id}`);
+        const response = await fetch(`${API_URL}/cart/${currentUser.id}`);
 
         if (response.ok) {
             const result = await response.json();
@@ -98,6 +98,7 @@ function createCartItemElement(item) {
         </div>
     `;
 
+    // Listeners
     const decreaseBtn = div.querySelector('.quantity-decrease');
     const increaseBtn = div.querySelector('.quantity-increase');
     const removeBtn = div.querySelector('.cart-item-remove');
@@ -137,7 +138,7 @@ function addToCart(productId) {
         return;
     }
 
-    fetch(`${API_URL}/api/cart`, {
+    fetch(`${API_URL}/cart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -175,7 +176,7 @@ function updateCartQuantity(cartId, quantity) {
         return;
     }
 
-    fetch(`${API_URL}/api/cart/${cartId}`, {
+    fetch(`${API_URL}/cart/${cartId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity })
@@ -197,7 +198,7 @@ function updateCartQuantity(cartId, quantity) {
 // Eliminar del carrito
 async function removeFromCart(cartId) {
     try {
-        const response = await fetch(`${API_URL}/api/cart/${cartId}`, {
+        const response = await fetch(`${API_URL}/cart/${cartId}`, {
             method: 'DELETE'
         });
 
@@ -229,7 +230,7 @@ async function handleClearCart() {
     if (!confirmed) return;
 
     try {
-        const response = await fetch(`${API_URL}/api/cart/clear/${currentUser.id}`, {
+        const response = await fetch(`${API_URL}/cart/clear/${currentUser.id}`, {
             method: 'DELETE'
         });
 
@@ -257,7 +258,7 @@ async function loadCartCount() {
     }
 
     try {
-        const response = await fetch(`${API_URL}/api/cart/${currentUser.id}`);
+        const response = await fetch(`${API_URL}/cart/${currentUser.id}`);
 
         if (response.ok) {
             const result = await response.json();

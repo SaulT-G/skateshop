@@ -113,6 +113,14 @@ function setupEventListeners() {
         loadProducts();
     });
 
+    // ==================== ADMIN — IR A GESTIONAR PRODUCTOS ====================
+    document.getElementById('manage-products-card')?.addEventListener('click', () => {
+        if (currentUser?.role === 'admin') {
+            showView('admin'); // <-- Vista correcta de gestión de productos
+            loadAdminProducts();
+        }
+    });
+
     // ==================== ADMIN — AGREGAR PRODUCTO ====================
     addProductBtn?.addEventListener('click', () => {
         editingProductId = null;
