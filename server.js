@@ -79,7 +79,7 @@ app.post('/api/auth/login', async (req, res) => {
 
         let email = username;
 
-        // Si no es un correo, buscarlo por username
+        // Si no es un correo, se busca por username
         if (!username.includes("@")) {
             const { data: profile } = await supabase
                 .from("profiles")
@@ -127,13 +127,21 @@ app.post('/api/auth/login', async (req, res) => {
 // ==================== PRODUCTOS ==============================
 // =============================================================
 
-// Obtener productos
+// Obtener productos con búsqueda
 app.get('/api/products', async (req, res) => {
     try {
-        const { data, error } = await supabase
+        let search = req.query.search?.trim() || "";
+
+        let query = supabase
             .from("products")
             .select("*")
             .order("created_at", { ascending: false });
+
+        if (search) {
+            query = query.ilike('titulo', `%${search}%`);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -185,7 +193,7 @@ app.post('/api/products', upload.single("imagen"), async (req, res) => {
     }
 });
 
-// ==================== ACTUALIZAR PRODUCTO ====================
+// Actualizar producto
 app.put('/api/products/:id', upload.single("imagen"), async (req, res) => {
     try {
         const { id } = req.params;
@@ -198,7 +206,6 @@ app.put('/api/products/:id', upload.single("imagen"), async (req, res) => {
             precio: Number(precio)
         };
 
-        // Si viene nueva imagen, subirla
         if (req.file) {
             const fileName = `${Date.now()}-${req.file.originalname}`;
 
@@ -229,13 +236,11 @@ app.put('/api/products/:id', upload.single("imagen"), async (req, res) => {
     }
 });
 
-// ==================== ELIMINAR PRODUCTO ====================
+// Eliminar producto
 app.delete('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
-
         await supabase.from("products").delete().eq("id", id);
-
         res.json({ success: true });
 
     } catch (err) {
@@ -296,13 +301,13 @@ app.post('/api/cart', async (req, res) => {
     }
 });
 
-// Actualizar cantidad del carrito
+// Actualizar cantidad
 app.put('/api/cart/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { quantity } = req.body;
 
-        if (!quantity || quantity < 1)
+        if (quantity < 1)
             return res.json({ success: false, message: "Cantidad inválida" });
 
         const { error } = await supabase
